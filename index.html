@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бухгалтерський Хаб: Калькулятор Позицій та ПДВ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'%3E%3Cpath d='M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 4h4v2h-4V6zm0 4h4v2h-4v-2zm-8 2h4v2H6v-2zm0-4h4v2H6V8zm0 8h4v2H6v-2zm12 2h-4v-2h4v2zm0-4h-4v-2h4v2z'/%3E%3C/svg%3E">
+
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --card-bg: rgba(255, 255, 255, 0.06);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --success: #10b981;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 40px 20px;
+        }
+
+        /* ШАПКА ДОДАТКА З КАРТИНКОЮ/ЛОГОТИПОМ */
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 32px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .app-logo {
+            width: 32px;
+            height: 32px;
+            fill: var(--primary);
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-badge {
+            background: var(--primary);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1300px;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #fff;
+            letter-spacing: -0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            font-size: 15px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 5px;
+        }
+
+        .items-list::-webkit-scrollbar { width: 6px; }
+        .items-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .item-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: center;
+            background: rgba(255,255,255,0.02);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .item-total-val {
+            font-weight: 600;
+            font-size: 14px;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        .btn-transfer {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            font-size: 15px;
+            padding: 14px;
+            border-radius: 12px;
+            width: 100%;
+            margin-top: auto;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+        }
+        .btn-transfer:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3); }
+
+        .calc-summary {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 16px;
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-total { font-size: 22px; font-weight: 700; color: #fff; }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .full-width { grid-column: 1 / -1; }
+
+        .results-container {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+
+        .result-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+
+        .result-number { font-size: 20px; font-weight: 700; }
+
+        .result-words-block {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            justify-content: space-between;
+            font-style: italic;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .doc-row-card {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px dashed rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .doc-row-content { font-size: 13.5px; line-height: 1.4; }
+        .doc-row-label { font-size: 10px; color: #818cf8; font-weight: 700; margin-bottom: 2px; text-transform: uppercase;}
+
+        .copy-btn-small {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .copy-btn-small:hover { background: var(--primary); border-color: var(--primary); }
+        .copy-btn-small.copied { background: var(--success) !important; }
+
+        .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+        .clear-btn { position: absolute; right: 12px; background: rgba(255,255,255,0.1); border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 9px; cursor: pointer; color: #fff; display: none; align-items: center; justify-content: center; }
+
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <svg class="app-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M19 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-5 4h4v2h-4V6zm0 4h4v2h-4v-2zm-8 2h4v2H6v-2zm0-4h4v2H6V8zm0 8h4v2H6v-2zm12 2h-4v-2h4v2zm0-4h-4v-2h4v2z"/>
+    </svg>
+    <div class="app-title">Smart Accounting Hub</div>
+    <div class="app-badge">v2.5</div>
+</div>
+
+<div class="main-container">
+    
+    <div class="panel-card">
+        <h2>Калькулятор позицій (Накладна)</h2>
+        
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; margin-bottom: 8px; padding: 0 10px;">
+            <span style="font-size: 11px; color: var(--text-muted); font-weight:600;">Назва товару/послуги</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight:600;">Кількість</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight:600;">Ціна (грн)</span>
+            <span></span>
+        </div>
+
+        <div class="items-list" id="items-container">
+            </div>
+
+        <button class="btn btn-primary" onclick="addItemRow()" style="margin-bottom: 20px; align-self: flex-start;">＋ Додати позицію</button>
+        
+        <div class="calc-summary">
+            <div>
+                <span style="color: var(--text-muted); font-size: 13px;">ЗАГАЛЬНИЙ ПІДСУМОК:</span>
+                <div class="summary-total" id="items-grand-total">0.00 грн</div>
+            </div>
+        </div>
+
+        <button class="btn btn-transfer" onclick="transferTotalToPdv()">Перенести суму в ПДВ ➡️</button>
+    </div>
+
+    <div class="panel-card">
+        <h2>Калькулятор ПДВ & Пропис</h2>
+        
+        <div class="grid-inputs">
+            <div class="form-group full-width">
+                <label for="amount">Сума для розрахунку</label>
+                <div class="input-wrapper">
+                    <input type="number" id="amount" placeholder="0.00" step="0.01" min="0" oninput="calculatePdv()">
+                    <button class="clear-btn" id="clear-btn" onclick="resetPdvInput()">✕</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="type">Тип суми</label>
+                <select id="type" onchange="calculatePdv()">
+                    <option value="without">Без ПДВ</option>
+                    <option value="with">З ПДВ</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="rate">Ставка ПДВ</label>
+                <select id="rate" onchange="calculatePdv()">
+                    <option value="20">20% (Стандартна)</option>
+                    <option value="7">7% (Медицина)</option>
+                    <option value="14">14% (Агро)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="results-container">
+            <div class="result-card">
+                <div class="result-main">
+                    <div>
+                        <label>Сума без ПДВ</label>
+                        <div class="result-number" id="num-without">0.00 грн</div>
+                    </div>
+                    <button class="copy-btn-small" onclick="copyCleanValue('num-without', this)">📋 Копіювати</button>
+                </div>
+                <div class="result-words-block">
+                    <span id="txt-without">Нуль гривень 00 копійок</span>
+                    <span style="color:#818cf8; cursor:pointer;" onclick="copyTextDirect('txt-without')">Копіювати text</span>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <div class="result-main">
+                    <div>
+                        <label id="label-pdv">Сума ПДВ (20%)</label>
+                        <div class="result-number" id="num-pdv">0.00 грн</div>
+                    </div>
+                    <button class="copy-btn-small" onclick="copyCleanValue('num-pdv', this)">📋 Копіювати</button>
+                </div>
+                <div class="result-words-block">
+                    <span id="txt-pdv">Нуль гривень 00 копійок</span>
+                    <span style="color:#818cf8; cursor:pointer;" onclick="copyTextDirect('txt-pdv')">Копіювати текст</span>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <div class="result-main">
+                    <div>
+                        <label>Разом з ПДВ</label>
+                        <div class="result-number" id="num-with">0.00 грн</div>
+                    </div>
+                    <button class="copy-btn-small" onclick="copyCleanValue('num-with', this)">📋 Копіювати</button>
+                </div>
+                <div class="result-words-block">
+                    <span id="txt-with">Нуль гривень 00 копійок</span>
+                    <span style="color:#818cf8; cursor:pointer;" onclick="copyTextDirect('txt-with')">Копіювати текст</span>
+                </div>
+            </div>
+
+            <div class="doc-row-card">
+                <div>
+                    <div class="doc-row-label">Цифровий рядок</div>
+                    <div class="doc-row-content" id="row-digits">Всього на суму: 0.00 грн., у т.ч. ПДВ (20%): 0.00 грн.</div>
+                </div>
+                <button class="copy-btn-small" onclick="copyTextDirect('row-digits', this)">📋</button>
+            </div>
+
+            <div class="doc-row-card">
+                <div>
+                    <div class="doc-row-label">Повний рядок з прописом</div>
+                    <div class="doc-row-content" id="row-full-text">Всього на суму: Нуль гривень 00 копійок, у т.ч. ПДВ (20%): 0.00 грн.</div>
+                </div>
+                <button class="copy-btn-small" onclick="copyTextDirect('row-full-text', this)">📋</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- ЛІВА ПАНЕЛЬ: СТРУКТУРА ДАНИХ І ЛОГІКА ТОВАРІВ ---
+let rowCounter = 0;
+
+function addItemRow(name = '', qty = 1, price = '') {
+    rowCounter++;
+    const container = document.getElementById('items-container');
+    const rowId = `item-row-${rowCounter}`;
+    
+    const rowHtml = `
+        <div class="item-row" id="${rowId}">
+            <input type="text" placeholder="Товар/Послуга ${rowCounter}" value="${name}">
+            <input type="number" class="item-qty" placeholder="1" value="${qty}" step="any" min="0" oninput="updateItemTotal('${rowId}')">
+            <input type="number" class="item-price" placeholder="0.00" value="${price}" step="0.01" min="0" oninput="updateItemTotal('${rowId}')">
+            <div class="item-total-val" id="total-${rowId}">0.00</div>
+            <button class="btn btn-danger" onclick="removeItemRow('${rowId}')" style="padding: 6px 10px; font-size:11px;">✕</button>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    updateItemTotal(rowId);
+}
+
+function removeItemRow(rowId) {
+    document.getElementById(rowId).remove();
+    calculateGrandTotal();
+}
+
+function updateItemTotal(rowId) {
+    const row = document.getElementById(rowId);
+    const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+    
+    const total = Math.round(qty * price * 100) / 100;
+    document.getElementById(`total-${rowId}`).innerText = total.toFixed(2);
+    
+    calculateGrandTotal();
+}
+
+function calculateGrandTotal() {
+    const totalElements = document.querySelectorAll('.item-total-val');
+    let grandTotal = 0;
+    totalElements.forEach(el => {
+        grandTotal += parseFloat(el.innerText) || 0;
+    });
+    document.getElementById('items-grand-total').innerText = grandTotal.toFixed(2) + ' грн';
+    return grandTotal;
+}
+
+function transferTotalToPdv() {
+    const total = calculateGrandTotal();
+    if(total <= 0) {
+        alert('Будь ласка, додайте хоча б одну позицію з ціною більше нуля.');
+        return;
+    }
+    document.getElementById('amount').value = total.toFixed(2);
+    calculatePdv();
+    
+    const amountInput = document.getElementById('amount');
+    amountInput.style.borderColor = '#10b981';
+    setTimeout(() => amountInput.style.borderColor = 'rgba(255,255,255,0.1)', 1000);
+}
+
+// --- ПРАВА ПАНЕЛЬ: РОЗРАХУНОК ПДВ ---
+function calculatePdv() {
+    const amountInput = document.getElementById('amount');
+    const clearBtn = document.getElementById('clear-btn');
+    const amount = parseFloat(amountInput.value);
+    const type = document.getElementById('type').value;
+    const rateVal = parseFloat(document.getElementById('rate').value);
+    const rate = rateVal / 100;
+
+    document.getElementById('label-pdv').innerText = `Сума ПДВ (${rateVal}%)`;
+
+    if (amountInput.value !== "") {
+        clearBtn.style.display = "flex";
+    } else {
+        clearBtn.style.display = "none";
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+        setDefaultValues(rateVal);
+        return;
+    }
+
+    let withoutPdv, pdv, withPdv;
+
+    if (type === 'without') {
+        withoutPdv = amount;
+        pdv = amount * rate;
+        withPdv = amount + pdv;
+    } else {
+        withPdv = amount;
+        withoutPdv = amount / (1 + rate);
+        pdv = amount - withoutPdv;
+    }
+
+    withoutPdv = Math.round(withoutPdv * 100) / 100;
+    pdv = Math.round(pdv * 100) / 100;
+    withPdv = Math.round(withPdv * 100) / 100;
+
+    const strWithout = withoutPdv.toFixed(2);
+    const strPdv = pdv.toFixed(2);
+    const strWith = withPdv.toFixed(2);
+
+    document.getElementById('num-without').innerText = strWithout + ' грн';
+    document.getElementById('num-pdv').innerText = strPdv + ' грн';
+    document.getElementById('num-with').innerText = strWith + ' грн';
+
+    const wordsWithout = numberToUkrainianWords(withoutPdv);
+    const wordsWith = numberToUkrainianWords(withPdv);
+
+    document.getElementById('txt-without').innerText = wordsWithout;
+    document.getElementById('txt-pdv').innerText = numberToUkrainianWords(pdv);
+    document.getElementById('txt-with').innerText = wordsWith;
+
+    document.getElementById('row-digits').innerText = `Всього на суму: ${strWith} грн., у т.ч. ПДВ (${rateVal}%): ${strPdv} грн.`;
+    document.getElementById('row-full-text').innerText = `Всього на суму: ${wordsWith}, у т.ч. ПДВ (${rateVal}%): ${strPdv} грн.`;
+}
+
+function resetPdvInput() {
+    document.getElementById('amount').value = '';
+    calculatePdv();
+}
+
+function setDefaultValues(rateVal) {
+    document.getElementById('num-without').innerText = '0.00 грн';
+    document.getElementById('num-pdv').innerText = '0.00 грн';
+    document.getElementById('num-with').innerText = '0.00 грн';
+    document.getElementById('txt-without').innerText = 'Нуль гривень 00 копійок';
+    document.getElementById('txt-pdv').innerText = 'Нуль гривень 00 копійок';
+    document.getElementById('txt-with').innerText = 'Нуль гривень 00 копійок';
+    document.getElementById('row-digits').innerText = `Всього на суму: 0.00 грн., у т.ч. ПДВ (${rateVal}%): 0.00 грн.`;
+    document.getElementById('row-full-text').innerText = `Всього на суму: Нуль гривень 00 копійок, у т.ч. ПДВ (${rateVal}%): 0.00 грн.`;
+}
+
+function copyCleanValue(elementId, btn) {
+    const text = document.getElementById(elementId).innerText.replace(' грн', '');
+    navigator.clipboard.writeText(text).then(() => animateBtn(btn));
+}
+
+// Перевантажена функція для сумісності з кнопками, де передається 'this' або нічого
+function copyTextDirect(elementId, btn = null) {
+    const text = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        // Перевіряємо, чи btn є дійсно елементом кнопки (а не подією чи іншим об'єктом)
+        if (btn && btn instanceof HTMLElement) {
+            animateBtn(btn);
+        } else {
+            showToast();
+        }
+    });
+}
+
+function animateBtn(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 1000);
+}
+
+function showToast() {
+    const t = document.createElement('div');
+    t.style = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#10b981; color:#fff; padding:10px 20px; border-radius:8px; font-size:14px; font-weight:600; z-index:9999;';
+    t.innerText = 'Текст скопійовано!';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 1500);
+}
+
+function numberToUkrainianWords(num) {
+    const units = ['', 'одна', 'дві', 'три', 'чотири', 'п\'ять', 'шість', 'сім', 'вісім', 'дев\'ять'];
+    const unitsMale = ['', 'один', 'два', 'три', 'чотири', 'п\'ять', 'шість', 'сім', 'вісім', 'дев\'ять'];
+    const teens = ['десять', 'одинадцять', 'дванадцять', 'тринадцять', 'чотирнадцять', 'п\'ятнадцять', 'шістнадцять', 'сімнадцять', 'вісімнадцять', 'дев\'ятнадцять'];
+    const tens = ['', '', 'двадцять', 'тридцять', 'сорок', 'п\'ятдесят', 'шістдесят', 'сімдесят', 'вісімдесят', 'дев\'яносто'];
+    const hundreds = ['', 'сто', 'двісті', 'триста', 'чотириста', 'п\'ятсот', 'шістсот', 'сімсот', 'вісімсот', 'дев\'ятсот'];
+
+    let mainPart = Math.floor(num);
+    let coins = Math.round((num - mainPart) * 100);
+
+    function getUkrWords(n, isFemale = false) {
+        if (n === 0) return '';
+        let words = [];
+        let h = Math.floor(n / 100);
+        let t = Math.floor((n % 100) / 10);
+        let u = n % 10;
+        if (h > 0) words.push(hundreds[h]);
+        if (t === 1) words.push(teens[u]);
+        else {
+            if (t > 1) words.push(tens[t]);
+            if (u > 0) words.push(isFemale ? units[u] : unitsMale[u]);
+        }
+        return words.join(' ');
+    }
+
+    if (mainPart === 0) {
+        return `Нуль гривень ${coins < 10 ? '0' + coins : coins} копійок`;
+    }
+
+    let resultWords = '';
+    if (mainPart >= 1000000) {
+        let millions = Math.floor(mainPart / 1000000); mainPart %= 1000000;
+        let milGrid = 'мільйонів';
+        if (!(millions % 100 >= 11 && millions % 100 <= 19)) {
+            if (millions % 10 === 1) milGrid = 'мільйон';
+            else if (millions % 10 >= 2 && millions % 10 <= 4) milGrid = 'мільйони';
+        }
+        resultWords += getUkrWords(millions, false) + ' ' + milGrid + ' ';
+    }
+    if (mainPart >= 1000) {
+        let thousands = Math.floor(mainPart / 1000); mainPart %= 1000;
+        let thGrid = 'тисяч';
+        if (!(thousands % 100 >= 11 && thousands % 100 <= 19)) {
+            if (thousands % 10 === 1) thGrid = 'тисяча';
+            else if (thousands % 10 >= 2 && thousands % 10 <= 4) thGrid = 'тисячі';
+        }
+        resultWords += getUkrWords(thousands, true) + ' ' + thGrid + ' ';
+    }
+    if (mainPart > 0) resultWords += getUkrWords(mainPart, true) + ' ';
+
+    let lastUAH = Math.floor(num) % 10; let lastTwoUAH = Math.floor(num) % 100;
+    let uahGrid = 'гривень';
+    if (!(lastTwoUAH >= 11 && lastTwoUAH <= 19)) {
+        if (lastUAH === 1) uahGrid = 'гривня';
+        else if (lastUAH >= 2 && lastUAH <= 4) uahGrid = 'гривні';
+    }
+    resultWords += uahGrid + ' ';
+
+    let coinsStr = coins < 10 ? '0' + coins : coins;
+    let coinGrid = 'копійок';
+    if (!(coins % 100 >= 11 && coins % 100 <= 19)) {
+        if (coins % 10 === 1) coinGrid = 'копійка';
+        else if (coins % 10 >= 2 && coins % 10 <= 4) coinGrid = 'копійки';
+    }
+    resultWords += coinsStr + ' ' + coinGrid;
+
+    resultWords = resultWords.replace(/\s+/g, ' ').trim();
+    return resultWords.charAt(0).toUpperCase() + resultWords.slice(1);
+}
+
+addItemRow();
+</script>
+
+</body>
+</html>
